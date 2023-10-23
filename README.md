@@ -1,5 +1,6 @@
 # asio-kcp
 Modern use kcp with asio, support async_accept, async_connect, async_read, async_read_some, async_write and can use with asio coroutine.
+According to the original version, fixed multithreading security issues
 
 # Build
 
