@@ -210,6 +210,7 @@ namespace moon
             std::shared_ptr<operation> read_op_;
             std::shared_ptr<operation> write_op_;
             std::vector<static_buffer*> pool_;
+            std::mutex input_mutex;
 
             template <typename Handler, typename MutableBuffer>
             class read_some_op :public operation
@@ -538,13 +539,22 @@ namespace moon
                 }
                 case packet_data:
                 {
-                    if (nullptr == obj_)
+                    input_mutex.lock();
+                    try
                     {
-                        init_kcp_context();
+                        if (nullptr == obj_)
+                        {
+                            init_kcp_context();
+                        }
+                        ikcp_input(obj_.get(), data + 1, (long)(size - 1));
+                        next_tick_ = 0;
+                        check_read_op();
                     }
-                    ikcp_input(obj_.get(), data +1, (long)(size - 1));
-                    next_tick_ = 0;
-                    check_read_op();
+                    catch (const std::exception&e)
+                    {
+                        console_log("%s.packet_data try: %u,%s", (isserver_ ? "server" : "client"), conv_, e.what());
+                    }
+                    input_mutex.unlock();
                     return;
                 }
                 default:
